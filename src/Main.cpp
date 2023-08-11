@@ -133,7 +133,8 @@ bool isValidMove(int piece, SDL_Rect *dest, int x, int y, vector<SDL_Rect *> &al
             return false;
     }
 
-    else if (abs(piece) == 2){
+    else if (abs(piece) == 2) // knight
+    { 
         int dx = abs((dest->x / size) - (x / size));
         int dy = abs((dest->y / size) - (y / size));
         if (dx == 1 && dy == 2 || dx == 2 && dy == 1) {
@@ -141,8 +142,45 @@ bool isValidMove(int piece, SDL_Rect *dest, int x, int y, vector<SDL_Rect *> &al
         }
         else
             return false;
-    } // knight 
+    }
 
+    else if (abs(piece) == 3) // Bishop
+    { 
+        int dx = abs((dest->x / size) - (x / size));
+        int dy = abs((dest->y / size) - (y / size));
+        if (dx == dy)
+        {
+            // int minY = min(y, dest->y) / size;
+            // int maxY = max(y, dest->y) / size;
+            // int minX = min(x, dest->x) / size;
+            // int maxX = max(x, dest->x) / size;
+            int xDir = (dest->x > x) ? 1 : -1;
+            int yDir = (dest->y > y) ? 1 : -1;
+            //cout << minX << " " << minY << " " << maxX <<"  "<< maxY << endl;
+            for (int i = 1; i <= dx; i++)
+            {
+                int checkX = x + i * xDir * size;
+                int checkY = y + i * yDir * size;
+                SDL_Rect tmpPos = {checkX, checkY, size, size};
+                for (int j = allD.size() - 1; j >= 0; j--)
+                {
+                    if (j == index)
+                        continue;
+                    if (SDL_HasIntersection(&tmpPos, allD[j]))
+                    {
+                        if (dest->x != tmpPos.x || dest->y != tmpPos.y)
+                        {
+                                cout << "blocked" << endl;
+                                return false;
+                        }
+                    }
+                }
+            }
+            return true;
+        }
+        else
+        return false;
+    }
     else // other pieces
         return true;
 }
