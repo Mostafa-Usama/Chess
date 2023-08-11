@@ -150,13 +150,9 @@ bool isValidMove(int piece, SDL_Rect *dest, int x, int y, vector<SDL_Rect *> &al
         int dy = abs((dest->y / size) - (y / size));
         if (dx == dy)
         {
-            // int minY = min(y, dest->y) / size;
-            // int maxY = max(y, dest->y) / size;
-            // int minX = min(x, dest->x) / size;
-            // int maxX = max(x, dest->x) / size;
             int xDir = (dest->x > x) ? 1 : -1;
             int yDir = (dest->y > y) ? 1 : -1;
-            //cout << minX << " " << minY << " " << maxX <<"  "<< maxY << endl;
+        
             for (int i = 1; i <= dx; i++)
             {
                 int checkX = x + i * xDir * size;
@@ -177,6 +173,56 @@ bool isValidMove(int piece, SDL_Rect *dest, int x, int y, vector<SDL_Rect *> &al
                 }
             }
             return true;
+        }
+        else
+        return false;
+    }
+    else if (abs(piece) == 6){ // Pawns
+        int side;
+        piece > 0 ? side = 1 : side = -1;
+        int dx = abs((dest->x / size) - (x / size));
+        int dy = ((dest->y / size) - (y / size));
+        if ((abs(dy) == 2 && y / size == 6 && side == 1 && dx == 0) || (abs(dy) == 2 && y / size == 1 && side == -1 && dx == 0))
+        {
+        for (int j = allD.size() - 1; j >= 0; j--)
+            {
+                if (j == index)
+                    continue;
+                if (SDL_HasIntersection(dest, allD[j]))
+                {
+                    
+                    return false;
+                }
+               
+            }
+            return true;
+        }
+        if (( dy == 1 && side == -1 || dy == -1 && side == 1) && (dx == 1 || dx == 0)){
+                // SDL_Rect tmpPos = {x, y + size * -side, size, size};
+                // SDL_Rect tmpPos2 = {x + size, y + size * side, size, size};
+                // SDL_Rect tmpPos3 = {x - size, y + size * side, size, size};
+                for (int j = allD.size() - 1; j >= 0; j--)
+                {
+                    if (j == index)
+                        continue;
+                    if (SDL_HasIntersection(dest, allD[j]) && dx == 1) 
+                    {
+                        cout << "Here" << endl;
+                        return true;
+                    }
+                    if (SDL_HasIntersection(dest, allD[j]))
+                    {
+                        cout << "blocked" << endl;
+                        return false;
+                    }
+                    
+                }
+                if (dx == 1)
+                {
+                    cout << "dx == 1" << endl;
+                    return false;
+                }
+        return true;
         }
         else
         return false;
