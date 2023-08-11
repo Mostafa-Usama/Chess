@@ -154,7 +154,7 @@ int main(int argc, char *argv[]){
 
     SDL_Event event;
 
-    SDL_Texture *board = IMG_LoadTexture(render, "res/images/board0.png");
+    SDL_Texture *board = IMG_LoadTexture(render, "res/images/board1.png");
     SDL_Texture *piceses = IMG_LoadTexture(render, "res/images/figures.png");
 
     vector <SDL_Rect *>allPiecesDest;
@@ -169,11 +169,16 @@ int main(int argc, char *argv[]){
     int dx, dy, index;
     int oldX, oldY;
     SDL_Rect *currentPiece = NULL;
+    SDL_Rect oldPos;
+    SDL_Rect newPos;
 
     while (gameRunning){
         int mouseX, mouseY;
         Uint32 mouseState = SDL_GetMouseState(&mouseX, &mouseY);
-
+        
+        SDL_RenderClear(render);
+        renderBoard(render, board);
+        
         while (SDL_PollEvent(&event))
         {
             if (event.type == SDL_QUIT){
@@ -184,10 +189,11 @@ int main(int argc, char *argv[]){
                    if (isMouseInRect(mouseX, mouseY, allPiecesDest[i])){
                        if (turn == 1 && colors[i] > 0 || turn == -1 && colors[i] < 0)
                        {
-                           cout << "White turn" << endl;
                            isMoving = true;
                            index = i;
                            currentPiece = allPiecesDest[i];
+                           
+
                            dx = mouseX - currentPiece->x;
                            dy = mouseY - currentPiece->y;
                            oldX = currentPiece->x;
@@ -199,7 +205,8 @@ int main(int argc, char *argv[]){
             }
             if (event.type == SDL_MOUSEBUTTONUP && currentPiece != NULL)
             {
-               
+                // SDL_SetRenderDrawColor(render, 255, 0, 255, 100);
+                // SDL_RenderFillRect(render, currentPiece);
                 isMoving = false;
                 turn = -turn;
                 
@@ -212,27 +219,40 @@ int main(int argc, char *argv[]){
 
                 if(isValidMove(colors[index], currentPiece, oldX, oldY, allPiecesDest, index)){
                     // sounds
+                    newPos.x = currentPiece->x+2;
+                    newPos.y = currentPiece->y+2;
+                    newPos.w = currentPiece->w;
+                    newPos.h = currentPiece->h;
+                    // newPos->x += 2;
+                    // newPos->y += 2;
+                    oldPos.x = oldX+2;
+                    oldPos.y = oldY+2;
+                    oldPos.h = size;
+                    oldPos.w = size;
                     for (int i = allPiecesDest.size() - 1; i >= 0; i--)
                     {
-                    if (i == index)
-                        continue;
-                    if (SDL_HasIntersection(currentPiece, allPiecesDest[i]))
-                        {   
-                        if ( (turn == -1 && colors[i] < 0) || (turn == 1 && colors[i] > 0) ){
+                       if (i == index)
+                           continue;
+                       if (SDL_HasIntersection(currentPiece, allPiecesDest[i]))
+                       {
+                           if ((turn == -1 && colors[i] < 0) || (turn == 1 && colors[i] > 0))
+                           {
 
-                        allPiecesDest.erase(allPiecesDest.begin() + i);
-                        allPiecesSrc.erase(allPiecesSrc.begin() + i);
-                        colors.erase(colors.begin() + i);
-                        
-                        }
-                        else {
-                        
-                        turn = -turn;
-                        currentPiece->x = oldX;
-                        currentPiece->y = oldY;
-                        }
+                                allPiecesDest.erase(allPiecesDest.begin() + i);
+                                allPiecesSrc.erase(allPiecesSrc.begin() + i);
+                                colors.erase(colors.begin() + i);
+                           }
+                           else
+                           {
+
+                                turn = -turn;
+                                currentPiece->x = oldX;
+                                currentPiece->y = oldY;
+                                // newPos = NULL;
+                           }
                     }
                 }
+               
             }
             else
             {
@@ -245,16 +265,24 @@ int main(int argc, char *argv[]){
                 
             }
         }
+      
         if (isMoving){
             currentPiece->x = mouseX - dx;
             currentPiece->y = mouseY - dy;
+            // draw rectangle around selected piece
+            SDL_SetRenderDrawColor(render, 0, 130, 240,255);
+            SDL_RenderDrawRect(render, currentPiece);
         }
-        SDL_RenderClear(render);
-        renderBoard(render, board);
+            // draw rectangle at new and old piece position
+            SDL_SetRenderDrawBlendMode(render, SDL_BLENDMODE_BLEND);
+            SDL_SetRenderDrawColor(render, 0, 10, 20, 120);
+            SDL_RenderFillRect(render, &newPos);
+            SDL_RenderFillRect(render, &oldPos);
+     
         renderPieces(render, piceses, allPiecesDest, allPiecesSrc);
         SDL_RenderPresent(render);
     }
-
+    
     SDL_DestroyWindow(window);
     SDL_Quit();
 
