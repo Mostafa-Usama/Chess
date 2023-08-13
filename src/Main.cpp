@@ -7,7 +7,92 @@ using namespace std;
 
 int size = 56;
 
-void renderBoard(SDL_Renderer* render, SDL_Texture* texture){
+bool checkHorizontalVertical(int y, int destY, int x, int destX, vector<SDL_Rect *> &allD, int index){
+    if (x  == destX)
+    {
+        int minX = min(y, destY) / size;
+        int maxX = max(y, destY) / size;
+        for (int i = minX; i < maxX; i++)
+        {
+            SDL_Rect tmpPos = {x , i * size, size, size};
+            for (int j = allD.size() - 1; j >= 0; j--)
+            {
+                if (j == index)
+                    continue;
+                if (SDL_HasIntersection(&tmpPos, allD[j]))
+                {
+                    if (destY != tmpPos.y)
+                    {
+                        cout << "blocked" << endl;
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
+    }
+   else if (y == destY )
+    {
+        int minX = min(x, destX) / size;
+        int maxX = max(x, destX) / size;
+        for (int i = minX; i < maxX; i++)
+        {
+            SDL_Rect tmpPos = {i * size, y, size, size};
+            for (int j = allD.size() - 1; j >= 0; j--)
+            {
+                if (j == index)
+                    continue;
+                if (SDL_HasIntersection(&tmpPos, allD[j]))
+                {
+                    if (destX != tmpPos.x)
+                    {
+                        cout << "blocked" << endl;
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
+    }
+    else 
+        return false;
+}
+bool checkDiagonal(int y, int destY, int x, int destX, vector<SDL_Rect *> &allD, int index){
+    int dx = abs((destX / size) - (x / size));
+    int dy = abs((destY / size) - (y / size));
+    if (dx == dy)
+    {
+        int xDir = (destX > x) ? 1 : -1;
+        int yDir = (destY > y) ? 1 : -1;
+
+        for (int i = 1; i <= dx; i++)
+        {
+            int checkX = x + i * xDir * size;
+            int checkY = y + i * yDir * size;
+            SDL_Rect tmpPos = {checkX, checkY, size, size};
+            for (int j = allD.size() - 1; j >= 0; j--)
+            {
+                if (j == index)
+                    continue;
+                if (SDL_HasIntersection(&tmpPos, allD[j]))
+                {
+                    if (destX != tmpPos.x || destY != tmpPos.y)
+                    {
+                        cout << "blocked" << endl;
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
+    }
+    else
+        return false;
+}
+
+
+void renderBoard(SDL_Renderer *render, SDL_Texture *texture)
+{
     SDL_Rect dst;
     dst.x = 0;
     dst.y = 0;
@@ -75,62 +160,14 @@ bool isMouseInRect(int mouseX, int mouseY, SDL_Rect *rect)
            mouseY >= rect->y && mouseY <= rect->y + rect->h;
 }
 
-bool isValidMove(int piece, SDL_Rect *dest, int x, int y, vector<SDL_Rect *> &allD, int index)
-{
+bool isValidMove(int piece, SDL_Rect *dest, int x, int y, vector<SDL_Rect *> &allD, int index){
     if (dest->x == x && dest->y == y)
     { // same square move
         return false;
     }
+
     if(abs(piece) == 1){ // Rock
-        if ( (dest->x == x && dest->y != y) || (dest->x != x && dest->y == y) ){
-            
-            // cout << "Rock Valid Move" << endl;
-            if (x / size == dest->x / size){
-                int minY = min(y, dest->y) / size;
-                int maxY = max(y, dest->y) / size;
-                for (int i = minY; i <= maxY; i++){
-                    SDL_Rect tmpPos = {x, i * size, size, size};
-                    for (int j = allD.size() - 1; j >= 0; j--){
-                        if (j == index)
-                            continue;
-                        if (SDL_HasIntersection(&tmpPos, allD[j]))
-                        {
-                            if (dest->y != tmpPos.y){
-                                cout << "blocked" << endl;
-                                return false; 
-                                } 
-                        }
-                      
-                    }
-                }
-                
-            }
-            if (y / size == dest->y / size)
-            {
-                int minX = min(x, dest->x) / size;
-                int maxX = max(x, dest->x) / size;
-                for (int i = minX; i < maxX; i++)
-                {
-                    SDL_Rect tmpPos = {i * size, y, size, size};
-                    for (int j = allD.size() - 1; j >= 0; j--)
-                    {
-                        if (j == index)
-                                continue;
-                        if (SDL_HasIntersection(&tmpPos, allD[j]))
-                        {
-                                if (dest->x != tmpPos.x)
-                                {
-                                cout << "blocked" << endl;
-                                return false;
-                                }
-                        }
-                    }
-                }
-            }
-            return true;
-        }
-        else 
-            return false;
+        return (checkHorizontalVertical(y, dest->y, x, dest->x, allD, index));
     }
 
     else if (abs(piece) == 2) // knight
@@ -145,37 +182,8 @@ bool isValidMove(int piece, SDL_Rect *dest, int x, int y, vector<SDL_Rect *> &al
     }
 
     else if (abs(piece) == 3) // Bishop
-    { 
-        int dx = abs((dest->x / size) - (x / size));
-        int dy = abs((dest->y / size) - (y / size));
-        if (dx == dy)
-        {
-            int xDir = (dest->x > x) ? 1 : -1;
-            int yDir = (dest->y > y) ? 1 : -1;
-        
-            for (int i = 1; i <= dx; i++)
-            {
-                int checkX = x + i * xDir * size;
-                int checkY = y + i * yDir * size;
-                SDL_Rect tmpPos = {checkX, checkY, size, size};
-                for (int j = allD.size() - 1; j >= 0; j--)
-                {
-                    if (j == index)
-                        continue;
-                    if (SDL_HasIntersection(&tmpPos, allD[j]))
-                    {
-                        if (dest->x != tmpPos.x || dest->y != tmpPos.y)
-                        {
-                                cout << "blocked" << endl;
-                                return false;
-                        }
-                    }
-                }
-            }
-            return true;
-        }
-        else
-        return false;
+    {
+        return checkDiagonal(y, dest->y, x, dest->x, allD, index);
     }
     else if (abs(piece) == 6){ // Pawns
         int side;
@@ -227,8 +235,20 @@ bool isValidMove(int piece, SDL_Rect *dest, int x, int y, vector<SDL_Rect *> &al
         else
         return false;
     }
-    else // other pieces
-        return true;
+    else if (abs(piece) == 4){
+
+        return (checkHorizontalVertical(y, dest->y, x, dest->x, allD, index) ||
+                checkDiagonal(y, dest->y, x, dest->x, allD, index));
+    }
+    else // king
+    {
+        int dx = abs((dest->x / size) - (x / size));
+        int dy = abs((dest->y / size) - (y / size));
+        if (dx <= 1 && dy <= 1)
+            return true;
+        else
+            return false;
+    }
 }
 
 int main(int argc, char *argv[]){
