@@ -6,6 +6,10 @@
 using namespace std;
 
 int size = 56;
+SDL_Rect *whiteKing;
+SDL_Rect *blackKing;
+
+
 
 bool checkHorizontalVertical(int y, int destY, int x, int destX, vector<SDL_Rect *> &allD, int index){
     if (x  == destX)
@@ -23,7 +27,6 @@ bool checkHorizontalVertical(int y, int destY, int x, int destX, vector<SDL_Rect
                 {
                     if (destY != tmpPos.y)
                     {
-                        cout << "blocked" << endl;
                         return false;
                     }
                 }
@@ -46,7 +49,6 @@ bool checkHorizontalVertical(int y, int destY, int x, int destX, vector<SDL_Rect
                 {
                     if (destX != tmpPos.x)
                     {
-                        cout << "blocked" << endl;
                         return false;
                     }
                 }
@@ -78,7 +80,6 @@ bool checkDiagonal(int y, int destY, int x, int destX, vector<SDL_Rect *> &allD,
                 {
                     if (destX != tmpPos.x || destY != tmpPos.y)
                     {
-                        cout << "blocked" << endl;
                         return false;
                     }
                 }
@@ -134,6 +135,10 @@ void loadPieces(SDL_Renderer *render, SDL_Texture *text, vector<SDL_Rect *> &all
             dst->y = i * size;
             dst->w = size;
             dst->h = size;
+            if (n == 5)
+                whiteKing = dst;
+            if (n == -5)
+                blackKing = dst;
             SDL_RenderCopy(render, text, src, dst);
             allD.push_back(dst);
             allS.push_back(src);
@@ -215,19 +220,16 @@ bool isValidMove(int piece, SDL_Rect *dest, int x, int y, vector<SDL_Rect *> &al
                         continue;
                     if (SDL_HasIntersection(dest, allD[j]) && dx == 1) 
                     {
-                        cout << "Here" << endl;
                         return true;
                     }
                     if (SDL_HasIntersection(dest, allD[j]))
                     {
-                        cout << "blocked" << endl;
                         return false;
                     }
                     
                 }
                 if (dx == 1)
                 {
-                    cout << "dx == 1" << endl;
                     return false;
                 }
         return true;
@@ -235,7 +237,7 @@ bool isValidMove(int piece, SDL_Rect *dest, int x, int y, vector<SDL_Rect *> &al
         else
         return false;
     }
-    else if (abs(piece) == 4){
+    else if (abs(piece) == 4){ // Queen
 
         return (checkHorizontalVertical(y, dest->y, x, dest->x, allD, index) ||
                 checkDiagonal(y, dest->y, x, dest->x, allD, index));
@@ -249,6 +251,30 @@ bool isValidMove(int piece, SDL_Rect *dest, int x, int y, vector<SDL_Rect *> &al
         else
             return false;
     }
+}
+
+int isInCheck(vector<SDL_Rect *> &allD, vector<int> color, int index)
+{
+    for (int i = 0; i < allD.size(); i++)
+    {
+        if (i == index) continue;
+        if (color[i] > 0)
+        {
+            if (isValidMove(color[i], blackKing, allD[i]->x, allD[i]->y, allD, -1))
+            {
+                    cout << color[i] << endl;
+                    return 1;
+            }
+        }
+        else if (color[i] < 0)
+        {
+            if (isValidMove(color[i], whiteKing, allD[i]->x, allD[i]->y, allD, -1))
+            {
+                    return -1;
+            }
+        }
+    }
+    return 0;
 }
 
 int main(int argc, char *argv[]){
@@ -272,6 +298,7 @@ int main(int argc, char *argv[]){
 
     Mix_Chunk *move = Mix_LoadWAV("res/Sounds/move-self.wav");
     Mix_Chunk *capture = Mix_LoadWAV("res/Sounds/capture.wav");
+    Mix_Chunk *checky = Mix_LoadWAV("res/Sounds/move-check.wav");
 
     loadPieces(render, piceses, allPiecesDest, allPiecesSrc, colors);
     
@@ -287,6 +314,9 @@ int main(int argc, char *argv[]){
     SDL_Rect movePos;
     bool captured = false;
     bool moved = true;
+    int check = 0;
+    bool allowed = true;
+
     while (gameRunning){
         int mouseX, mouseY;
         Uint32 mouseState = SDL_GetMouseState(&mouseX, &mouseY);
@@ -325,26 +355,49 @@ int main(int argc, char *argv[]){
                 // SDL_RenderFillRect(render, currentPiece);
                 isMoving = false;
                 captured = false;
-                
                 turn = -turn;
                 
 
                 int x = (currentPiece->x + size / 2) / size;
                 int y = (currentPiece->y + size / 2) / size;
-
                 currentPiece->x = size * x;
                 currentPiece->y = size * y;
+                check = isInCheck(allPiecesDest, colors, -1);
+               
+                if ((check ==  1 && turn == 1) || (check == -1 && turn == -1)){
+                    allowed = false;
+                    for (int i = allPiecesDest.size() - 1; i >= 0; i--)
+                    {
+                       if (i == index)
+                                continue;
+                       if (SDL_HasIntersection(currentPiece, allPiecesDest[i]))
+                       {
+                                check = isInCheck(allPiecesDest, colors, i);
+                                if (check == 0) // here
+                                {
+                                    allowed = true;
+                                    break;
+                                }
 
-                if(isValidMove(colors[index], currentPiece, oldX, oldY, allPiecesDest, index)){
+                        }
+                    }
+                }
+                else
+                {
+                    allowed = true;
+                }
+                if (isValidMove(colors[index], currentPiece, oldX, oldY, allPiecesDest, index) && allowed)
+                {
                     // sounds
                     moved = true;
                     for (int i = allPiecesDest.size() - 1; i >= 0; i--)
                     {
-                       if (i == index)
-                           continue;
-                       if (SDL_HasIntersection(currentPiece, allPiecesDest[i]))
-                       {
-                           if ((turn == -1 && colors[i] < 0) || (turn == 1 && colors[i] > 0))
+                        if (i == index)
+                            continue;
+                        if (SDL_HasIntersection(currentPiece, allPiecesDest[i]))
+                        {
+                            check = isInCheck(allPiecesDest, colors, -1);
+                            if ((turn == -1 && colors[i] < 0) || (turn == 1 && colors[i] > 0) ) // here
                             {
                                 captured = true;
                                 allPiecesDest.erase(allPiecesDest.begin() + i);
@@ -354,7 +407,6 @@ int main(int argc, char *argv[]){
                             }
                             else
                             {
-
                                 turn = -turn;
                                 currentPiece->x = oldX;
                                 currentPiece->y = oldY;
@@ -362,34 +414,36 @@ int main(int argc, char *argv[]){
                                 moved = false;
                             }
                         }
-                        
                     }
-                    if (moved){
-                    captured ? Mix_PlayChannel(-1, capture, 0) : Mix_PlayChannel(-1, move, 0);
+                    if (moved)
+                    {
+                        check = isInCheck(allPiecesDest, colors, -1);
+                        if (check != 0)
+                            Mix_PlayChannel(-1, checky, 0);
+                        else
+                            captured ? Mix_PlayChannel(-1, capture, 0) : Mix_PlayChannel(-1, move, 0);
+                        newPos.x = currentPiece->x + 2;
+                        newPos.y = currentPiece->y + 2;
+                        newPos.w = currentPiece->w;
+                        newPos.h = currentPiece->h;
 
-                    newPos.x = currentPiece->x + 2;
-                    newPos.y = currentPiece->y + 2;
-                    newPos.w = currentPiece->w;
-                    newPos.h = currentPiece->h;
-                
-                    oldPos.x = oldX + 2;
-                    oldPos.y = oldY + 2;
-                    oldPos.h = size;
-                    oldPos.w = size;
+                        oldPos.x = oldX + 2;
+                        oldPos.y = oldY + 2;
+                        oldPos.h = size;
+                        oldPos.w = size;
                     }
-            }
-            else
-            {
+                }
+                else
+                {
 
-                turn = -turn;
-                currentPiece->x = oldX;
-                currentPiece->y = oldY;
-            }
+                    turn = -turn;
+                    currentPiece->x = oldX;
+                    currentPiece->y = oldY;
+                }
                 currentPiece = NULL;
-                
-            }
         }
-      
+    }
+
         if (isMoving){
             currentPiece->x = mouseX - dx;
             currentPiece->y = mouseY - dy;
@@ -403,6 +457,25 @@ int main(int argc, char *argv[]){
         SDL_SetRenderDrawColor(render, 0, 10, 20, 120);
         SDL_RenderFillRect(render, &newPos);
         SDL_RenderFillRect(render, &oldPos);
+       if (check != 0){
+            SDL_SetRenderDrawColor(render, 200, 0, 0, 100);
+            if (check == 1 )
+            {
+                SDL_Rect black = {blackKing->x + 2,
+                                  blackKing->y + 2,
+                                  size,
+                                  size};
+
+                SDL_RenderFillRect(render, &black);
+        }
+        if (check == -1 ){
+            SDL_Rect white = {whiteKing->x + 2,
+                              whiteKing->y + 2,
+                              size,
+                              size};
+            SDL_RenderFillRect(render, &white);
+        }
+        }
 
         renderPieces(render, piceses, allPiecesDest, allPiecesSrc);
         SDL_RenderPresent(render);
