@@ -34,7 +34,7 @@ bool checkHorizontalVertical(int y, int destY, int x, int destX, vector<SDL_Rect
         }
         return true;
     }
-   else if (y == destY )
+   else if (y == destY)
     {
         int minX = min(x, destX) / size;
         int maxX = max(x, destX) / size;
@@ -260,7 +260,7 @@ int isInCheck(vector<SDL_Rect *> &allD, vector<int> color, int index)
         if (i == index) continue;
         if (color[i] > 0)
         {
-            if (isValidMove(color[i], blackKing, allD[i]->x, allD[i]->y, allD, -1))
+            if (isValidMove(color[i], blackKing, allD[i]->x, allD[i]->y, allD, i))
             {
                     cout << color[i] << endl;
                     return 1;
@@ -268,7 +268,7 @@ int isInCheck(vector<SDL_Rect *> &allD, vector<int> color, int index)
         }
         else if (color[i] < 0)
         {
-            if (isValidMove(color[i], whiteKing, allD[i]->x, allD[i]->y, allD, -1))
+            if (isValidMove(color[i], whiteKing, allD[i]->x, allD[i]->y, allD, i))
             {
                     return -1;
             }
